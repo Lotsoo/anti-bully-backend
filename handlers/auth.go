@@ -57,6 +57,45 @@ func (a *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token, "user": gin.H{"id": user.ID, "username": user.Username, "role": user.Role}})
 }
 
+// Register creates a new user and returns a token
+func (a *AuthHandler) Register(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// check if username already exists
+	var existing models.User
+	if err := a.DB.Where("username = ?", req.Username).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "username already exists"})
+		return
+	}
+
+	pw, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
+		return
+	}
+
+	u := models.User{Username: req.Username, Password: string(pw), Role: "user", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	if err := a.DB.Create(&u).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create user"})
+		return
+	}
+
+	token, err := GenerateTokenForUser(u.ID, u.Role, a.cfg.JWTSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create token"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"token": token, "user": gin.H{"id": u.ID, "username": u.Username, "role": u.Role}})
+}
+
 // Helper to create an admin user if none exist (simple seeding)
 func (a *AuthHandler) EnsureAdminExists(username, password string) error {
 	var count int64

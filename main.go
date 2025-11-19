@@ -50,6 +50,8 @@ func main() {
 	r.Static("/uploads", cfg.UploadDir)
 
 	// public
+	// registration
+	r.POST("/auth/register", h.Auth.Register)
 	r.POST("/auth/login", h.Auth.Login)
 	r.POST("/reports", h.Report.CreateReport)
 	r.GET("/reports/:id", h.Report.GetReport)

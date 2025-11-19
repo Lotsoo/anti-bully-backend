@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -36,13 +37,24 @@ func LoadConfigFromEnv() (*Config, error) {
 func NewGormDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open gorm db: %w", err)
+	}
+	// verify underlying sql.DB can be reached
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sql.DB from gorm: %w", err)
+	}
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 	return db, nil
 }
 
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(&models.User{}, &models.Report{})
+	if err := db.AutoMigrate(&models.User{}, &models.Report{}); err != nil {
+		return fmt.Errorf("auto-migrate failed: %w", err)
+	}
+	return nil
 }
 
 func DSNFromEnv() string {

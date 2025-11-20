@@ -8,7 +8,7 @@ import (
 
 type User struct {
 	ID        uint   `gorm:"primaryKey" json:"id"`
-	Username  string `gorm:"uniqueIndex;size:100" json:"username"`
+	Email     string `gorm:"uniqueIndex;size:100" json:"email"`
 	Password  string `gorm:"size:255" json:"-"`
 	Role      string `gorm:"size:50" json:"role"` // e.g., admin, user
 	CreatedAt time.Time
@@ -20,9 +20,9 @@ type Report struct {
 	Location     string `gorm:"size:255" json:"location"`
 	Description  string `gorm:"type:text" json:"description"`
 	ImageURL     string `gorm:"size:1024" json:"image_url"`
-	ReporterID   uint   `json:"reporter_id"`
-	ReporterName string `gorm:"size:100" json:"reporter_username"`
-	Status       string `gorm:"size:50" json:"status"` // BELUM DITANGANI / SUDAH DITANGANI
+	ReporterID    uint   `json:"reporter_id"`
+	ReporterEmail string `gorm:"size:100" json:"reporter_email"`
+	Status        string `gorm:"size:50" json:"status"` // BELUM DITANGANI / SUDAH DITANGANI
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

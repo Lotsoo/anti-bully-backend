@@ -24,7 +24,7 @@ type ConfigWrapper struct {
 
 func (a *AuthHandler) Login(c *gin.Context) {
 	var req struct {
-		Username string `json:"username" binding:"required"`
+		Email    string `json:"email" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -33,7 +33,7 @@ func (a *AuthHandler) Login(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := a.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+	if err := a.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 			return
@@ -54,13 +54,13 @@ func (a *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token, "user": gin.H{"id": user.ID, "username": user.Username, "role": user.Role}})
+	c.JSON(http.StatusOK, gin.H{"token": token, "user": gin.H{"id": user.ID, "email": user.Email, "role": user.Role}})
 }
 
 // Register creates a new user and returns a token
 func (a *AuthHandler) Register(c *gin.Context) {
 	var req struct {
-		Username string `json:"username" binding:"required"`
+		Email    string `json:"email" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -68,10 +68,10 @@ func (a *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// check if username already exists
+	// check if email already exists
 	var existing models.User
-	if err := a.DB.Where("username = ?", req.Username).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "username already exists"})
+	if err := a.DB.Where("email = ?", req.Email).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "email already exists"})
 		return
 	}
 
@@ -81,7 +81,7 @@ func (a *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	u := models.User{Username: req.Username, Password: string(pw), Role: "user", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	u := models.User{Email: req.Email, Password: string(pw), Role: "user", CreatedAt: time.Now(), UpdatedAt: time.Now()}
 	if err := a.DB.Create(&u).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create user"})
 		return
@@ -93,11 +93,11 @@ func (a *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"token": token, "user": gin.H{"id": u.ID, "username": u.Username, "role": u.Role}})
+	c.JSON(http.StatusCreated, gin.H{"token": token, "user": gin.H{"id": u.ID, "email": u.Email, "role": u.Role}})
 }
 
 // Helper to create an admin user if none exist (simple seeding)
-func (a *AuthHandler) EnsureAdminExists(username, password string) error {
+func (a *AuthHandler) EnsureAdminExists(email, password string) error {
 	var count int64
 	a.DB.Model(&models.User{}).Where("role = ?", "admin").Count(&count)
 	if count > 0 {
@@ -109,7 +109,7 @@ func (a *AuthHandler) EnsureAdminExists(username, password string) error {
 		return err
 	}
 
-	u := models.User{Username: username, Password: string(pw), Role: "admin", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	u := models.User{Email: email, Password: string(pw), Role: "admin", CreatedAt: time.Now(), UpdatedAt: time.Now()}
 	return a.DB.Create(&u).Error
 }
 

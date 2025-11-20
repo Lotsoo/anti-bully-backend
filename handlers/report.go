@@ -124,10 +124,10 @@ func (r *ReportHandler) CreateReport(c *gin.Context) {
 	if v, ok := c.Get("user_id"); ok {
 		if uid, ok2 := v.(uint); ok2 {
 			rec.ReporterID = uid
-			// try to fetch username
+			// try to fetch email
 			var u models.User
 			if err := r.DB.First(&u, uid).Error; err == nil {
-				rec.ReporterName = u.Username
+				rec.ReporterEmail = u.Email
 			}
 		}
 	}

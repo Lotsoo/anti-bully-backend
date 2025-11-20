@@ -57,17 +57,17 @@ func main() {
 	// serve uploaded files
 	r.Static("/uploads", cfg.UploadDir)
 
-	// public
-	// registration
+	// public (auth free)
 	r.POST("/auth/register", h.Auth.Register)
 	r.POST("/auth/login", h.Auth.Login)
-	r.POST("/reports", h.Report.CreateReport)
 	r.GET("/reports/:id", h.Report.GetReport)
 
-	// protected
+	// protected routes (require JWT). Posting reports requires authentication so we can
+	// record who submitted the report.
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware(cfg))
 	{
+		auth.POST("/reports", h.Report.CreateReport)
 		auth.PUT("/reports/:id/handle", middleware.RequireRole("admin"), h.Report.HandleReport)
 		// admin-only list
 		auth.GET("/reports", middleware.RequireRole("admin"), h.Report.ListReports)

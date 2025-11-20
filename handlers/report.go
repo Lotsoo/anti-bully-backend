@@ -119,6 +119,18 @@ func (r *ReportHandler) CreateReport(c *gin.Context) {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
+
+	// If the request contains authenticated user info (set by middleware), attach reporter info
+	if v, ok := c.Get("user_id"); ok {
+		if uid, ok2 := v.(uint); ok2 {
+			rec.ReporterID = uid
+			// try to fetch username
+			var u models.User
+			if err := r.DB.First(&u, uid).Error; err == nil {
+				rec.ReporterName = u.Username
+			}
+		}
+	}
 	if err := r.DB.Create(&rec).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create report"})
 		return

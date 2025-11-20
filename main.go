@@ -27,8 +27,16 @@ func main() {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
-	if err := config.AutoMigrate(db); err != nil {
-		log.Fatalf("auto-migrate failed: %v", err)
+	// Auto-migrate can fail on some environments (driver/version differences).
+	// Allow skipping migrations in dev by setting SKIP_MIGRATE=1 in the environment.
+	if os.Getenv("SKIP_MIGRATE") == "1" {
+		log.Println("SKIP_MIGRATE=1 set, skipping AutoMigrate")
+	} else {
+		if err := config.AutoMigrate(db); err != nil {
+			// Log the error but continue running so other parts of the server can be used while
+			// you investigate migration issues. In production you probably want to fail fast.
+			log.Printf("auto-migrate failed: %v", err)
+		}
 	}
 
 	h := handlers.NewHandler(db, cfg)

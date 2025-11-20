@@ -69,6 +69,8 @@ func main() {
 	auth.Use(middleware.AuthMiddleware(cfg))
 	{
 		auth.PUT("/reports/:id/handle", middleware.RequireRole("admin"), h.Report.HandleReport)
+		// admin-only list
+		auth.GET("/reports", middleware.RequireRole("admin"), h.Report.ListReports)
 	}
 
 	port := os.Getenv("PORT")
